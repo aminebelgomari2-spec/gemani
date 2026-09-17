@@ -1,991 +1,204 @@
 <!DOCTYPE html>
-<html lang="fr" class="dark">
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gemani AI - Assistant Intelligent</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            gemani: {
-              50: '#f0f4ff',
-              100: '#e0e9fe',
-              500: '#3b82f6',
-              600: '#2563eb',
-              700: '#1d4ed8',
-              800: '#1e40af',
-              900: '#1e3a8a',
-              glow: '#7c3aed',
-            },
-            dark: {
-              bg: '#090d16',
-              sidebar: '#0f172a',
-              card: '#1e293b',
-              border: '#334155',
-              hover: '#1e293b'
-            }
-          },
-          animation: {
-            'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-            'glow-spin': 'spin 8s linear infinite',
-          }
-        }
-      }
-    }
-  </script>
-
-  <!-- Font Awesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Marked.js (Markdown Rendering) -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  
-  <!-- Highlight.js (Code Syntax Highlighting) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
-
   <style>
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #334155;
-      border-radius: 9999px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #475569;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { display: flex; height: 100vh; background-color: #0d0f12; color: #e1e7ed; overflow: hidden; }
 
-    /* Glassmorphism effects */
-    .glass-panel {
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
+    /* Sidebar */
+    #sidebar { width: 280px; background-color: #13171d; padding: 20px 15px; display: flex; flex-direction: column; gap: 15px; border-right: 1px solid #212830; }
+    #new-chat-btn { padding: 14px; background: linear-gradient(135deg, #6366f1, #3b82f6); color: #fff; border: none; border-radius: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); transition: opacity 0.2s; }
+    #new-chat-btn:hover { opacity: 0.9; }
+    #chat-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .chat-item { padding: 12px; background-color: transparent; border-radius: 8px; cursor: pointer; border: none; color: #9da7b3; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; transition: background 0.2s, color 0.2s; }
+    .chat-item:hover, .chat-item.active { background-color: #1f2630; color: #f0f4f8; }
 
-    .glass-card {
-      background: rgba(30, 41, 59, 0.6);
-      backdrop-filter: blur(8px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
+    .sidebar-footer { border-top: 1px solid #212830; pt: 15px; padding-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+    .btn-footer { padding: 10px; background: transparent; border: 1px solid #212830; color: #9da7b3; border-radius: 8px; cursor: pointer; font-size: 0.85rem; text-align: left; transition: background 0.2s; }
+    .btn-footer:hover { background: #1f2630; color: #fff; }
 
-    /* AI Gradient Text */
-    .gemani-gradient-text {
-      background: linear-gradient(135deg, #60a5fa 0%, #a855f7 50%, #ec4899 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+    /* Main Chat */
+    #main-chat { flex: 1; display: flex; flex-direction: column; height: 100vh; background-color: #0d0f12; }
+    #header { padding: 18px 24px; border-bottom: 1px solid #212830; display: flex; justify-content: space-between; align-items: center; background: #13171d; }
+    .header-title { font-size: 1.1rem; font-weight: 600; color: #f0f4f8; display: flex; align-items: center; gap: 10px; }
+    .status-badge { font-size: 0.75rem; padding: 4px 8px; background: rgba(34, 197, 94, 0.1); color: #4ade80; border-radius: 20px; border: 1px solid rgba(34, 197, 94, 0.2); }
 
-    .gemani-gradient-bg {
-      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
-    }
+    #messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
+    .message { max-width: 80%; padding: 14px 18px; border-radius: 14px; line-height: 1.6; font-size: 0.95rem; white-space: pre-wrap; word-break: break-word; }
+    .user { align-self: flex-end; background-color: #2563eb; color: #ffffff; border-bottom-right-radius: 2px; }
+    .model { align-self: flex-start; background-color: #13171d; border: 1px solid #212830; color: #e1e7ed; border-bottom-left-radius: 2px; }
 
-    /* Glowing Orb Background */
-    .glow-orb {
-      position: absolute;
-      width: 300px;
-      height: 300px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(124, 58, 237, 0.15) 0%, rgba(59, 130, 246, 0.05) 50%, rgba(0,0,0,0) 70%);
-      pointer-events: none;
-      filter: blur(40px);
-    }
-
-    /* Prose overrides for rendered markdown */
-    .prose code {
-      color: #93c5fd;
-      background: #0f172a;
-      padding: 0.2rem 0.4rem;
-      border-radius: 0.25rem;
-      font-size: 0.875em;
-    }
-    .prose pre {
-      background: #090d16 !important;
-      border: 1px solid #334155;
-      border-radius: 0.75rem;
-      padding: 1rem;
-      margin-top: 0.75rem;
-      margin-bottom: 0.75rem;
-      overflow-x: auto;
-    }
-    .prose pre code {
-      background: transparent;
-      padding: 0;
-      color: inherit;
-    }
-    .prose p {
-      margin-bottom: 0.75rem;
-      line-height: 1.6;
-    }
-    .prose ul {
-      list-style-type: disc;
-      padding-left: 1.5rem;
-      margin-bottom: 0.75rem;
-    }
-    .prose ol {
-      list-style-type: decimal;
-      padding-left: 1.5rem;
-      margin-bottom: 0.75rem;
-    }
+    /* Input Area */
+    #input-container { padding: 20px 24px; background: #13171d; border-top: 1px solid #212830; display: flex; gap: 12px; }
+    #user-input { flex: 1; padding: 14px 18px; border-radius: 10px; border: 1px solid #212830; background-color: #0d0f12; color: #fff; outline: none; font-size: 0.95rem; transition: border-color 0.2s; }
+    #user-input:focus { border-color: #3b82f6; }
+    #send-btn { padding: 0 20px; background: #2563eb; border: none; border-radius: 10px; color: #fff; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+    #send-btn:hover { background: #1d4ed8; }
   </style>
 </head>
+<body>
 
-<body class="bg-dark-bg text-slate-100 antialiased h-screen flex overflow-hidden font-sans">
-
-  <!-- Background Glow FX -->
-  <div class="glow-orb -top-20 -left-20"></div>
-  <div class="glow-orb bottom-10 right-10"></div>
-
-  <!-- Mobile Overlay -->
-  <div id="mobile-overlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/60 z-30 hidden lg:hidden backdrop-blur-sm"></div>
-
-  <!-- SIDEBAR -->
-  <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-80 bg-dark-sidebar z-40 flex flex-col border-r border-slate-800 transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0">
-    
-    <!-- App Brand -->
-    <div class="p-4 flex items-center justify-between border-b border-slate-800/80">
-      <div class="flex items-center space-x-3">
-        <div class="relative flex items-center justify-center w-10 h-10 rounded-xl gemani-gradient-bg shadow-lg shadow-blue-500/20">
-          <i class="fa-solid font-bold text-white text-xl">G</i>
-          <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-dark-sidebar rounded-full" title="Gemani en ligne"></span>
-        </div>
-        <div>
-          <h1 class="font-bold text-lg leading-tight tracking-wide flex items-center gap-1.5">
-            <span class="gemani-gradient-text font-extrabold text-xl">Gemani</span>
-            <span class="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">AI 3.0</span>
-          </h1>
-          <p class="text-xs text-slate-400">Assistant Contextuel</p>
-        </div>
-      </div>
-      <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-2">
-        <i class="fa-solid fa-xmark text-lg"></i>
-      </button>
+  <div id="sidebar">
+    <button id="new-chat-btn" onclick="startNewChat()">+ Nouvelle discussion</button>
+    <div id="chat-list"></div>
+    <div class="sidebar-footer">
+      <button class="btn-footer" onclick="promptApiKey()">⚙️ Clé API Gemini</button>
     </div>
+  </div>
 
-    <!-- New Chat Button -->
-    <div class="p-4">
-      <button onclick="createNewChat()" class="w-full py-3 px-4 rounded-xl gemani-gradient-bg text-white font-medium flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/20 hover:opacity-95 active:scale-[0.98] transition-all duration-200">
-        <i class="fa-solid fa-plus text-sm"></i>
-        <span>Nouvelle discussion</span>
-      </button>
-    </div>
-
-    <!-- Search Bar -->
-    <div class="px-4 mb-2">
-      <div class="relative">
-        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-        <input type="text" id="search-input" oninput="filterChats()" placeholder="Rechercher une discussion..." class="w-full bg-slate-900/80 text-xs text-slate-200 pl-8 pr-3 py-2 rounded-lg border border-slate-800 focus:outline-none focus:border-blue-500/50 transition">
+  <div id="main-chat">
+    <div id="header">
+      <div class="header-title">
+        Gemani AI
+        <span class="status-badge">● Gemini 1.5 Flash Active</span>
       </div>
     </div>
-
-    <!-- Chat History List -->
-    <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1" id="chat-list">
-      <!-- Generated via JavaScript -->
-    </div>
-
-    <!-- Sidebar Footer & Controls -->
-    <div class="p-3 border-t border-slate-800/80 bg-slate-950/40 space-y-2">
-      <!-- Memory Status Card -->
-      <div class="p-2.5 rounded-lg bg-slate-900/60 border border-slate-800/80 flex items-center justify-between text-xs">
-        <div class="flex items-center space-x-2 text-slate-300">
-          <i class="fa-solid fa-brain text-purple-400"></i>
-          <span>MÃ©moire du contexte</span>
-        </div>
-        <label class="relative inline-flex items-center cursor-pointer">
-          <input type="checkbox" id="memory-toggle" checked onchange="toggleMemory(this.checked)" class="sr-only peer">
-          <div class="w-8 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
-        </label>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="flex items-center justify-between pt-1">
-        <button onclick="openSettingsModal()" class="flex items-center space-x-2 text-xs text-slate-400 hover:text-slate-200 py-1.5 px-2 rounded hover:bg-slate-800 transition">
-          <i class="fa-solid fa-gear"></i>
-          <span>ParamÃ¨tres API</span>
-        </button>
-        <button onclick="confirmClearAll()" class="text-xs text-rose-400/80 hover:text-rose-400 py-1.5 px-2 rounded hover:bg-rose-500/10 transition" title="Effacer tout l'historique">
-          <i class="fa-solid fa-trash-can"></i>
-        </button>
-      </div>
-    </div>
-  </aside>
-
-  <!-- MAIN CHAT CONTAINER -->
-  <main class="flex-1 flex flex-col h-full min-w-0 bg-dark-bg relative">
-    
-    <!-- Top Header -->
-    <header class="h-16 border-b border-slate-800/80 px-4 flex items-center justify-between glass-panel sticky top-0 z-20">
-      <div class="flex items-center space-x-3 min-w-0">
-        <button onclick="toggleSidebar()" class="lg:hidden text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800">
-          <i class="fa-solid fa-bars text-lg"></i>
-        </button>
-        <div class="min-w-0">
-          <h2 id="current-chat-title" class="font-semibold text-sm sm:text-base text-slate-100 truncate">
-            Nouvelle discussion
-          </h2>
-          <div class="flex items-center space-x-2 text-[11px] text-slate-400">
-            <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span id="model-status-text">Gemani 3 Flash Active</span>
-            <span class="text-slate-600">â¢</span>
-            <span id="context-count-badge" class="text-purple-400">MÃ©moire: 0 msgs</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Header Quick Controls -->
-      <div class="flex items-center space-x-1 sm:space-x-2">
-        <button onclick="exportCurrentChat()" class="p-2 text-slate-400 hover:text-slate-200 rounded-lg hover:bg-slate-800 text-xs sm:text-sm transition" title="Exporter la discussion (Markdown)">
-          <i class="fa-solid fa-download"></i>
-        </button>
-        <button onclick="clearCurrentMessages()" class="p-2 text-slate-400 hover:text-rose-400 rounded-lg hover:bg-slate-800 text-xs sm:text-sm transition" title="Vider cette discussion">
-          <i class="fa-solid fa-rotate-right"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- Messages Scroll Container -->
-    <div id="messages-container" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 scroll-smooth">
-      <!-- Welcome Screen (Shown when empty) -->
-      <div id="welcome-screen" class="max-w-3xl mx-auto py-8 sm:py-12 px-4 flex flex-col items-center text-center">
-        <div class="w-20 h-20 rounded-3xl gemani-gradient-bg flex items-center justify-center shadow-2xl shadow-purple-500/30 mb-6 animate-pulse-slow">
-          <i class="fa-solid font-extrabold text-white text-4xl">G</i>
-        </div>
-        <h2 class="text-2xl sm:text-3xl font-bold mb-2">Bonjour, je suis <span class="gemani-gradient-text">Gemani</span></h2>
-        <p class="text-slate-400 max-w-md text-sm sm:text-base mb-8">
-          Votre assistant IA propulsÃ© par Gemini. Je me souviens de nos conversations et conserve vos historiques.
-        </p>
-
-        <!-- Prompt Ideas Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl text-left">
-          <button onclick="usePrompt('Explique-moi la thÃ©orie de la relativitÃ© simplement avec des exemples de la vie courante.')" class="glass-card p-4 rounded-xl hover:border-blue-500/40 hover:bg-slate-800/80 transition text-xs sm:text-sm space-y-1 group">
-            <div class="flex items-center space-x-2 text-blue-400 font-semibold">
-              <i class="fa-solid fa-atom"></i>
-              <span>Explication Scientifique</span>
-            </div>
-            <p class="text-slate-400 text-xs group-hover:text-slate-300">Explique la relativitÃ© simplement</p>
-          </button>
-
-          <button onclick="usePrompt('Ãcris un script Python pour tÃ©lÃ©charger et traiter un fichier JSON depuis une API.')" class="glass-card p-4 rounded-xl hover:border-purple-500/40 hover:bg-slate-800/80 transition text-xs sm:text-sm space-y-1 group">
-            <div class="flex items-center space-x-2 text-purple-400 font-semibold">
-              <i class="fa-solid fa-code"></i>
-              <span>GÃ©nÃ©ration de Code</span>
-            </div>
-            <p class="text-slate-400 text-xs group-hover:text-slate-300">Script Python pour requÃªtes API JSON</p>
-          </button>
-
-          <button onclick="usePrompt('RÃ©dige un e-mail professionnel et poli pour relancer un client concernant un devis sans rÃ©ponse.')" class="glass-card p-4 rounded-xl hover:border-pink-500/40 hover:bg-slate-800/80 transition text-xs sm:text-sm space-y-1 group">
-            <div class="flex items-center space-x-2 text-pink-400 font-semibold">
-              <i class="fa-solid fa-envelope"></i>
-              <span>RÃ©daction d'e-mail</span>
-            </div>
-            <p class="text-slate-400 text-xs group-hover:text-slate-300">Email de relance de devis professionnel</p>
-          </button>
-
-          <button onclick="usePrompt('Donne-moi 5 idÃ©es originales de projets Web innovants utilisant l\'intelligence artificielle.')" class="glass-card p-4 rounded-xl hover:border-emerald-500/40 hover:bg-slate-800/80 transition text-xs sm:text-sm space-y-1 group">
-            <div class="flex items-center space-x-2 text-emerald-400 font-semibold">
-              <i class="fa-solid fa-lightbulb"></i>
-              <span>Brainstorming CrÃ©atif</span>
-            </div>
-            <p class="text-slate-400 text-xs group-hover:text-slate-300">5 idÃ©es de projets Web & IA</p>
-          </button>
-        </div>
-      </div>
-
-      <!-- Messages Stream Target -->
-      <div id="messages-list" class="max-w-4xl mx-auto space-y-6">
-        <!-- Messages appended dynamically -->
-      </div>
-    </div>
-
-    <!-- Input Dock -->
-    <div class="p-3 sm:p-4 border-t border-slate-800/80 glass-panel">
-      <div class="max-w-4xl mx-auto relative">
-        <form onsubmit="handleFormSubmit(event)" class="relative flex items-end bg-slate-900/90 border border-slate-700/80 rounded-2xl focus-within:border-blue-500/70 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all shadow-xl">
-          
-          <!-- File Attach Mock Button -->
-          <button type="button" onclick="triggerFileInput()" class="p-3 text-slate-400 hover:text-slate-200 transition text-sm flex-shrink-0" title="Joindre un fichier texte">
-            <i class="fa-solid fa-paperclip"></i>
-          </button>
-          <input type="file" id="file-input" class="hidden" onchange="handleFileUpload(event)" accept=".txt,.json,.js,.py,.html,.css,.md">
-
-          <!-- Voice Mic Input -->
-          <button type="button" id="mic-btn" onclick="toggleSpeechRecognition()" class="p-3 text-slate-400 hover:text-amber-400 transition text-sm flex-shrink-0" title="DictÃ©e vocale">
-            <i class="fa-solid fa-microphone"></i>
-          </button>
-
-          <!-- Textarea -->
-          <textarea id="user-input" rows="1" onkeydown="handleKeyDown(event)" oninput="autoResizeTextarea(this)" placeholder="Posez votre question Ã  Gemani..." class="w-full bg-transparent text-slate-100 text-sm sm:text-base py-3 px-2 focus:outline-none resize-none max-h-48 overflow-y-auto leading-relaxed"></textarea>
-
-          <!-- Submit Button -->
-          <button type="submit" id="send-btn" class="m-1.5 p-2.5 rounded-xl gemani-gradient-bg text-white font-medium flex items-center justify-center shadow-md hover:opacity-90 active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0">
-            <i class="fa-solid fa-paper-plane text-sm"></i>
-          </button>
-        </form>
-
-        <div class="flex items-center justify-between text-[11px] text-slate-500 mt-2 px-2">
-          <span><kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">EntrÃ©e</kbd> pour envoyer, <kbd class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">Maj + EntrÃ©e</kbd> pour saut de ligne</span>
-          <span id="char-counter">0 caractÃ¨res</span>
-        </div>
-      </div>
-    </div>
-  </main>
-
-  <!-- SETTINGS MODAL -->
-  <div id="settings-modal" class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 hidden backdrop-blur-md">
-    <div class="bg-dark-sidebar border border-slate-700/80 rounded-2xl w-full max-w-md p-6 shadow-2xl relative space-y-4">
-      <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-        <h3 class="font-bold text-lg text-slate-100 flex items-center gap-2">
-          <i class="fa-solid fa-sliders text-blue-400"></i>
-          Configuration Gemani API
-        </h3>
-        <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white p-1">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-
-      <div class="space-y-3">
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">ClÃ© API Google Gemini</label>
-          <div class="relative">
-            <input type="password" id="api-key-input" class="w-full bg-slate-900 border border-slate-700 rounded-lg py-2 pl-3 pr-10 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
-            <button type="button" onclick="togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs">
-              <i class="fa-solid fa-eye" id="eye-icon"></i>
-            </button>
-          </div>
-          <p class="text-[10px] text-slate-500 mt-1">Votre clÃ© est enregistrÃ©e uniquement dans votre navigateur.</p>
-        </div>
-
-        <div>
-          <label class="block text-xs font-semibold text-slate-300 mb-1">ModÃ¨le d'IA</label>
-          <select id="model-select" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-xs text-slate-200 focus:outline-none focus:border-blue-500">
-            <option value="gemini-3-flash-preview" selected>Gemini 3 Flash (RecommandÃ© & Rapide)</option>
-            <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-800">
-        <button onclick="closeSettingsModal()" class="px-4 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition">Annuler</button>
-        <button onclick="saveSettings()" class="px-4 py-2 text-xs font-medium gemani-gradient-bg text-white rounded-lg shadow hover:opacity-90 transition">Enregistrer</button>
-      </div>
+    <div id="messages"></div>
+    <div id="input-container">
+      <input type="text" id="user-input" placeholder="Posez votre question à Gemani..." onkeypress="handleKeyPress(event)">
+      <button id="send-btn" onclick="sendMessage()">Envoyer</button>
     </div>
   </div>
 
   <script>
-    /* Default API Key provided by the user */
-    const DEFAULT_API_KEY = "AIzaSyC67TUw-Zq0lTq9PGkk_JHS8OUeaEa9AFA";
-
-    /* State Management */
-    let apiKey = localStorage.getItem('gemani_api_key') || DEFAULT_API_KEY;
-    let selectedModel = localStorage.getItem('gemani_model') || 'gemini-3-flash-preview';
-    let memoryEnabled = localStorage.getItem('gemani_memory') !== 'false';
-    let chats = JSON.parse(localStorage.getItem('gemani_chats') || '[]');
+    let apiKey = localStorage.getItem('gemani_api_key') || '';
+    let chats = JSON.parse(localStorage.getItem('gemani_chats')) || [];
     let currentChatId = null;
-    let isGenerating = false;
-    let recognition = null;
 
-    /* Marked Config */
-    marked.setOptions({
-      highlight: function(code, lang) {
-        const language = hljs.getLanguage(lang) ? lang : 'plaintext';
-        return hljs.highlight(code, { language }).value;
-      },
-      langPrefix: 'hljs language-',
-      breaks: true
-    });
-
-    // Initialize application on load
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('memory-toggle').checked = memoryEnabled;
-      document.getElementById('api-key-input').value = apiKey;
-      document.getElementById('model-select').value = selectedModel;
-
-      if (chats.length > 0) {
-        selectChat(chats[0].id);
-      } else {
-        createNewChat();
+    function init() {
+      if (!apiKey) {
+        setTimeout(promptApiKey, 500);
       }
-
       renderChatList();
-      setupSpeechRecognition();
-    });
+      if (chats.length > 0) {
+        loadChat(chats[0].id);
+      } else {
+        startNewChat();
+      }
+    }
 
-    function saveChatsToStorage() {
+    function promptApiKey() {
+      const key = prompt("Entrez votre clé API Google Gemini :", apiKey);
+      if (key !== null) {
+        apiKey = key.trim();
+        localStorage.setItem('gemani_api_key', apiKey);
+      }
+    }
+
+    function saveToStorage() {
       localStorage.setItem('gemani_chats', JSON.stringify(chats));
     }
 
-    function createNewChat() {
+    function startNewChat() {
       const newChat = {
-        id: 'chat_' + Date.now(),
-        title: 'Nouvelle discussion',
-        createdAt: new Date().toISOString(),
-        messages: []
+        id: Date.now(),
+        title: "Nouvelle discussion",
+        history: []
       };
       chats.unshift(newChat);
-      saveChatsToStorage();
-      selectChat(newChat.id);
+      currentChatId = newChat.id;
+      saveToStorage();
       renderChatList();
-
-      if (window.innerWidth < 1024) {
-        closeSidebar();
-      }
+      renderMessages();
     }
 
-    function selectChat(id) {
-      currentChatId = id;
-      const activeChat = getCurrentChat();
-      if (!activeChat) return;
+    function renderChatList() {
+      const chatListEl = document.getElementById('chat-list');
+      chatListEl.innerHTML = '';
+      chats.forEach(chat => {
+        const btn = document.createElement('button');
+        btn.className = `chat-item ${chat.id === currentChatId ? 'active' : ''}`;
+        btn.innerText = chat.title;
+        btn.onclick = () => loadChat(chat.id);
+        chatListEl.appendChild(btn);
+      });
+    }
 
-      document.getElementById('current-chat-title').innerText = activeChat.title;
-      renderMessages();
+    function loadChat(id) {
+      currentChatId = id;
       renderChatList();
-      updateContextBadge();
+      renderMessages();
     }
 
     function getCurrentChat() {
       return chats.find(c => c.id === currentChatId);
     }
 
-    function filterChats() {
-      const query = document.getElementById('search-input').value.toLowerCase();
-      renderChatList(query);
-    }
-
-    function renderChatList(filterQuery = '') {
-      const container = document.getElementById('chat-list');
-      container.innerHTML = '';
-
-      const filtered = chats.filter(c => c.title.toLowerCase().includes(filterQuery));
-
-      if (filtered.length === 0) {
-        container.innerHTML = `
-          <div class="text-center py-6 text-slate-500 text-xs">
-            <i class="fa-solid fa-comments text-slate-600 mb-1 text-lg block"></i>
-            Aucune discussion trouvÃ©e
-          </div>`;
-        return;
-      }
-
-      filtered.forEach(chat => {
-        const isActive = chat.id === currentChatId;
-        const div = document.createElement('div');
-        div.className = `group relative flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition-all duration-150 text-xs ${
-          isActive 
-            ? 'bg-blue-600/20 text-blue-300 border border-blue-500/30 font-medium shadow-sm' 
-            : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-        }`;
-        
-        div.onclick = () => selectChat(chat.id);
-
-        div.innerHTML = `
-          <div class="flex items-center space-x-2.5 min-w-0 pr-6">
-            <i class="fa-regular fa-message ${isActive ? 'text-blue-400' : 'text-slate-500'} text-xs"></i>
-            <span class="truncate">${escapeHtml(chat.title)}</span>
-          </div>
-          <div class="absolute right-2 opacity-0 group-hover:opacity-100 flex items-center space-x-1 bg-slate-900/90 px-1 py-0.5 rounded border border-slate-700/50">
-            <button onclick="event.stopPropagation(); renameChat('${chat.id}')" class="p-1 hover:text-blue-400 text-slate-400" title="Renommer">
-              <i class="fa-solid fa-pen text-[10px]"></i>
-            </button>
-            <button onclick="event.stopPropagation(); deleteChat('${chat.id}')" class="p-1 hover:text-rose-400 text-slate-400" title="Supprimer">
-              <i class="fa-solid fa-trash text-[10px]"></i>
-            </button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
     function renderMessages() {
-      const activeChat = getCurrentChat();
-      const listEl = document.getElementById('messages-list');
-      const welcomeEl = document.getElementById('welcome-screen');
+      const messagesEl = document.getElementById('messages');
+      messagesEl.innerHTML = '';
+      const currentChat = getCurrentChat();
 
-      listEl.innerHTML = '';
+      if (!currentChat) return;
 
-      if (!activeChat || activeChat.messages.length === 0) {
-        welcomeEl.classList.remove('hidden');
+      currentChat.history.forEach(msg => {
+        const div = document.createElement('div');
+        div.className = `message ${msg.role === 'user' ? 'user' : 'model'}`;
+        div.innerText = msg.parts[0].text;
+        messagesEl.appendChild(div);
+      });
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    async function sendMessage() {
+      if (!apiKey) {
+        alert("Veuillez entrer une clé API valide.");
+        promptApiKey();
         return;
       }
 
-      welcomeEl.classList.add('hidden');
+      const inputEl = document.getElementById('user-input');
+      const text = inputEl.value.trim();
+      if (!text) return;
 
-      activeChat.messages.forEach((msg, idx) => {
-        const msgDiv = document.createElement('div');
-        const isUser = msg.role === 'user';
-
-        msgDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'} animate-fade-in`;
-
-        const contentHtml = isUser 
-          ? `<div class="bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none max-w-[85%] sm:max-w-[75%] shadow-md text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(msg.text)}</div>`
-          : `
-            <div class="flex space-x-3 max-w-[92%] sm:max-w-[85%]">
-              <div class="w-8 h-8 rounded-xl gemani-gradient-bg flex items-center justify-center text-white font-bold text-xs flex-shrink-0 shadow-md">
-                G
-              </div>
-              <div class="glass-card border border-slate-700/60 p-4 sm:p-5 rounded-2xl rounded-tl-none text-slate-200 text-sm prose max-w-none shadow-md overflow-hidden relative group">
-                <div class="rendered-markdown">${marked.parse(msg.text)}</div>
-                <div class="mt-3 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-                  <span class="text-[10px] text-slate-500">${new Date(msg.timestamp || Date.now()).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                  <div class="flex items-center space-x-2">
-                    <button onclick="copyToClipboard('${msg.id}')" class="hover:text-blue-400 transition flex items-center gap-1" title="Copier la rÃ©ponse">
-                      <i class="fa-regular fa-copy"></i> Copier
-                    </button>
-                    <button onclick="speakText('${msg.id}')" class="hover:text-amber-400 transition flex items-center gap-1" title="Ãcouter la rÃ©ponse">
-                      <i class="fa-solid fa-volume-high"></i> Ãcouter
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          `;
-
-        msgDiv.innerHTML = contentHtml;
-        msgDiv.dataset.id = msg.id;
-        listEl.appendChild(msgDiv);
-      });
-
-      // Highlight syntax in code blocks
-      document.querySelectorAll('pre code').forEach((block) => {
-        hljs.highlightElement(block);
-        attachCopyButtonToCodeBlock(block);
-      });
-
-      scrollToBottom();
-    }
-
-    function attachCopyButtonToCodeBlock(codeBlock) {
-      const pre = codeBlock.parentElement;
-      if (pre.querySelector('.copy-code-btn')) return;
-
-      pre.style.position = 'relative';
-      const btn = document.createElement('button');
-      btn.className = 'copy-code-btn absolute top-2 right-2 bg-slate-800/90 text-slate-300 hover:text-white hover:bg-slate-700 border border-slate-700 px-2 py-1 rounded text-[10px] transition flex items-center gap-1';
-      btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copier';
+      const currentChat = getCurrentChat();
+      currentChat.history.push({ role: 'user', parts: [{ text }] });
       
-      btn.onclick = () => {
-        const text = codeBlock.innerText;
-        copyTextToClipboard(text);
-        btn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> CopiÃ© !';
-        setTimeout(() => {
-          btn.innerHTML = '<i class="fa-regular fa-copy"></i> Copier';
-        }, 2000);
-      };
-
-      pre.appendChild(btn);
-    }
-
-    async function handleFormSubmit(e) {
-      e.preventDefault();
-      const textarea = document.getElementById('user-input');
-      const text = textarea.value.trim();
-
-      if (!text || isGenerating) return;
-
-      const activeChat = getCurrentChat();
-      if (!activeChat) return;
-
-      // Reset textarea height & content
-      textarea.value = '';
-      autoResizeTextarea(textarea);
-      document.getElementById('char-counter').innerText = '0 caractÃ¨res';
-
-      // 1. Append user message
-      const userMsg = {
-        id: 'msg_' + Date.now(),
-        role: 'user',
-        text: text,
-        timestamp: new Date().toISOString()
-      };
-
-      activeChat.messages.push(userMsg);
-
-      // Auto title for the first message
-      if (activeChat.messages.length === 1) {
-        activeChat.title = text.length > 30 ? text.substring(0, 30) + '...' : text;
+      if (currentChat.history.length === 1) {
+        currentChat.title = text.length > 22 ? text.substring(0, 22) + '...' : text;
         renderChatList();
-        document.getElementById('current-chat-title').innerText = activeChat.title;
       }
 
-      saveChatsToStorage();
+      inputEl.value = '';
       renderMessages();
-      updateContextBadge();
 
-      // 2. Show Typing Indicator
-      showTypingIndicator();
-      isGenerating = true;
-
-      // 3. Prepare payload with full conversation history (Memory)
-      let contentsPayload = [];
-
-      if (memoryEnabled) {
-        // Build payload from stored chat messages to maintain context
-        contentsPayload = activeChat.messages.map(m => ({
-          role: m.role === 'user' ? 'user' : 'model',
-          parts: [{ text: m.text }]
-        }));
-      } else {
-        // Send only the last message
-        contentsPayload = [{ role: 'user', parts: [{ text: text }] }];
-      }
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
       try {
-        const responseText = await callGeminiAPI(contentsPayload);
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: currentChat.history })
+        });
 
-        removeTypingIndicator();
-
-        // 4. Save AI message
-        const aiMsg = {
-          id: 'msg_' + Date.now(),
-          role: 'model',
-          text: responseText,
-          timestamp: new Date().toISOString()
-        };
-
-        activeChat.messages.push(aiMsg);
-        saveChatsToStorage();
-        renderMessages();
-        updateContextBadge();
-
-      } catch (err) {
-        removeTypingIndicator();
-        console.error("Gemani API Error:", err);
+        const data = await response.json();
         
-        const errorMsg = {
-          id: 'msg_' + Date.now(),
-          role: 'model',
-          text: "â ï¸ **Erreur lors de la communication avec l'API Gemani.**\n\n*DÃ©tails :* " + err.message + "\n\nVeuillez vÃ©rifier votre clÃ© API dans les paramÃ¨tres.",
-          timestamp: new Date().toISOString()
-        };
-        activeChat.messages.push(errorMsg);
-        saveChatsToStorage();
-        renderMessages();
-      } finally {
-        isGenerating = false;
-      }
-    }
-
-    async function callGeminiAPI(contents) {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: contents,
-          systemInstruction: {
-            parts: [{ text: "Tu es Gemani, une intelligence artificielle moderne, amicale, ultra-compÃ©tente et prÃ©cise. Tu rÃ©ponds de maniÃ¨re claire, esthÃ©tique et bien structurÃ©e en franÃ§ais (avec du Markdown propre, du code bien formatÃ© le cas Ã©chÃ©ant). Tu te rappelles toujours du contexte de la conversation prÃ©cÃ©dente." }]
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error?.message || `Statut de rÃ©ponse HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      const candidate = data.candidates?.[0];
-
-      if (candidate && candidate.content?.parts?.[0]?.text) {
-        return candidate.content.parts[0].text;
-      } else {
-        throw new Error("Format de rÃ©ponse vide ou invalide renvoyÃ© par l'IA.");
-      }
-    }
-
-    function showTypingIndicator() {
-      const listEl = document.getElementById('messages-list');
-      const typingDiv = document.createElement('div');
-      typingDiv.id = 'typing-indicator';
-      typingDiv.className = 'flex items-start space-x-3 animate-fade-in';
-      typingDiv.innerHTML = `
-        <div class="w-8 h-8 rounded-xl gemani-gradient-bg flex items-center justify-center text-white font-bold text-xs shadow-md">
-          G
-        </div>
-        <div class="glass-card border border-slate-700/60 py-3 px-4 rounded-2xl rounded-tl-none flex items-center space-x-2 text-slate-400 text-xs">
-          <span class="font-medium text-blue-400">Gemani rÃ©flÃ©chit</span>
-          <div class="flex space-x-1">
-            <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-            <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-            <div class="w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
-          </div>
-        </div>
-      `;
-      listEl.appendChild(typingDiv);
-      scrollToBottom();
-    }
-
-    function removeTypingIndicator() {
-      const el = document.getElementById('typing-indicator');
-      if (el) el.remove();
-    }
-
-    function updateContextBadge() {
-      const activeChat = getCurrentChat();
-      const badge = document.getElementById('context-count-badge');
-      if (!activeChat) {
-        badge.innerText = 'MÃ©moire: 0 msgs';
-        return;
-      }
-      const count = activeChat.messages.length;
-      badge.innerText = `MÃ©moire: ${count} msg${count > 1 ? 's' : ''}`;
-    }
-
-    function setupSpeechRecognition() {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SpeechRecognition) {
-        document.getElementById('mic-btn').style.display = 'none';
-        return;
-      }
-
-      recognition = new SpeechRecognition();
-      recognition.lang = 'fr-FR';
-      recognition.continuous = false;
-      recognition.interimResults = false;
-
-      recognition.onstart = () => {
-        document.getElementById('mic-btn').classList.add('text-rose-500', 'animate-pulse');
-      };
-
-      recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript;
-        const textarea = document.getElementById('user-input');
-        textarea.value += (textarea.value ? ' ' : '') + transcript;
-        autoResizeTextarea(textarea);
-      };
-
-      recognition.onend = () => {
-        document.getElementById('mic-btn').classList.remove('text-rose-500', 'animate-pulse');
-      };
-    }
-
-    function toggleSpeechRecognition() {
-      if (!recognition) return;
-      try {
-        recognition.start();
-      } catch (e) {
-        recognition.stop();
-      }
-    }
-
-    function speakText(msgId) {
-      const activeChat = getCurrentChat();
-      if (!activeChat) return;
-      const msg = activeChat.messages.find(m => m.id === msgId);
-      if (!msg) return;
-
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop any ongoing speech
-        const cleanText = msg.text.replace(/```[\s\S]*?```/g, 'Bloc de code omis.').replace(/[*#_`]/g, '');
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = 'fr-FR';
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
-    function triggerFileInput() {
-      document.getElementById('file-input').click();
-    }
-
-    function handleFileUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        const content = evt.target.result;
-        const textarea = document.getElementById('user-input');
-        textarea.value += `\n[Contenu du fichier "${file.name}"]:\n\`\`\`\n${content}\n\`\`\`\n`;
-        autoResizeTextarea(textarea);
-      };
-      reader.readAsText(file);
-    }
-
-    function usePrompt(text) {
-      const textarea = document.getElementById('user-input');
-      textarea.value = text;
-      autoResizeTextarea(textarea);
-      textarea.focus();
-    }
-
-    function copyToClipboard(msgId) {
-      const activeChat = getCurrentChat();
-      if (!activeChat) return;
-      const msg = activeChat.messages.find(m => m.id === msgId);
-      if (msg) copyTextToClipboard(msg.text);
-    }
-
-    function copyTextToClipboard(text) {
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      document.body.appendChild(textarea);
-      textarea.select();
-      try {
-        document.execCommand('copy');
-      } catch (err) {
-        console.error('Erreur copie', err);
-      }
-      document.body.removeChild(textarea);
-    }
-
-    function toggleSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('mobile-overlay');
-      sidebar.classList.toggle('-translate-x-full');
-      overlay.classList.toggle('hidden');
-    }
-
-    function closeSidebar() {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('mobile-overlay');
-      sidebar.classList.add('-translate-x-full');
-      overlay.classList.add('hidden');
-    }
-
-    function toggleMemory(enabled) {
-      memoryEnabled = enabled;
-      localStorage.setItem('gemani_memory', enabled);
-    }
-
-    function openSettingsModal() {
-      document.getElementById('settings-modal').classList.remove('hidden');
-    }
-
-    function closeSettingsModal() {
-      document.getElementById('settings-modal').classList.add('hidden');
-    }
-
-    function togglePasswordVisibility() {
-      const input = document.getElementById('api-key-input');
-      const icon = document.getElementById('eye-icon');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.classList.replace('fa-eye', 'fa-eye-slash');
-      } else {
-        input.type = 'password';
-        icon.classList.replace('fa-eye-slash', 'fa-eye');
-      }
-    }
-
-    function saveSettings() {
-      const keyVal = document.getElementById('api-key-input').value.trim();
-      const modelVal = document.getElementById('model-select').value;
-
-      if (keyVal) {
-        apiKey = keyVal;
-        localStorage.setItem('gemani_api_key', keyVal);
-      }
-      selectedModel = modelVal;
-      localStorage.setItem('gemani_model', modelVal);
-
-      document.getElementById('model-status-text').innerText = `Gemani (${modelVal.includes('3') ? '3' : '1.5'}) Active`;
-      closeSettingsModal();
-    }
-
-    function renameChat(id) {
-      const chat = chats.find(c => c.id === id);
-      if (!chat) return;
-      const newTitle = prompt("Nouveau nom pour cette discussion :", chat.title);
-      if (newTitle && newTitle.trim()) {
-        chat.title = newTitle.trim();
-        saveChatsToStorage();
-        renderChatList();
-        if (id === currentChatId) {
-          document.getElementById('current-chat-title').innerText = chat.title;
-        }
-      }
-    }
-
-    function deleteChat(id) {
-      chats = chats.filter(c => c.id !== id);
-      saveChatsToStorage();
-      if (currentChatId === id) {
-        if (chats.length > 0) {
-          selectChat(chats[0].id);
+        if (data.candidates && data.candidates[0].content) {
+          const modelResponse = data.candidates[0].content.parts[0].text;
+          currentChat.history.push({ role: 'model', parts: [{ text: modelResponse }] });
+        } else if (data.error) {
+          currentChat.history.push({ role: 'model', parts: [{ text: `Erreur : ${data.error.message}` }] });
         } else {
-          createNewChat();
+          currentChat.history.push({ role: 'model', parts: [{ text: "Erreur lors de la réponse de l'IA." }] });
         }
-      } else {
-        renderChatList();
+      } catch (error) {
+        console.error(error);
+        currentChat.history.push({ role: 'model', parts: [{ text: "Erreur de connexion à l'API." }] });
       }
+
+      saveToStorage();
+      renderMessages();
     }
 
-    function confirmClearAll() {
-      if (confirm("Voulez-vous vraiment effacer TOUTES vos discussions enregistrÃ©es ?")) {
-        chats = [];
-        saveChatsToStorage();
-        createNewChat();
-      }
+    function handleKeyPress(e) {
+      if (e.key === 'Enter') sendMessage();
     }
 
-    function clearCurrentMessages() {
-      const activeChat = getCurrentChat();
-      if (!activeChat) return;
-      if (confirm("RÃ©initialiser les messages de cette discussion ?")) {
-        activeChat.messages = [];
-        saveChatsToStorage();
-        renderMessages();
-        updateContextBadge();
-      }
-    }
-
-    function exportCurrentChat() {
-      const activeChat = getCurrentChat();
-      if (!activeChat || activeChat.messages.length === 0) return;
-
-      let markdownContent = `# ${activeChat.title}\n*ExportÃ© le ${new Date().toLocaleString('fr-FR')}*\n\n---\n\n`;
-      activeChat.messages.forEach(m => {
-        const sender = m.role === 'user' ? 'ð¤ **Vous**' : 'ð¤ **Gemani**';
-        markdownContent += `${sender}:\n${m.text}\n\n---\n\n`;
-      });
-
-      const blob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${activeChat.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.md`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    /* Helper Utilities */
-    function autoResizeTextarea(el) {
-      el.style.height = 'auto';
-      el.style.height = Math.min(el.scrollHeight, 192) + 'px';
-      document.getElementById('char-counter').innerText = `${el.value.length} caractÃ¨res`;
-    }
-
-    function handleKeyDown(e) {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        handleFormSubmit(e);
-      }
-    }
-
-    function scrollToBottom() {
-      const container = document.getElementById('messages-container');
-      setTimeout(() => {
-        container.scrollTop = container.scrollHeight;
-      }, 50);
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.innerText = text;
-      return div.innerHTML;
-    }
+    init();
   </script>
 </body>
 </html>
